@@ -6,6 +6,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from gl_publisher_mcp.tools.adr_search import search_adrs
 from gl_publisher_mcp.tools.file_reader import read_file, FileReadError
+from gl_publisher_mcp.tools.impact_builder_finder import find_impact_builders
 
 class GLPublisherMCPServer:
     def __init__(self, gl_publisher_path: Optional[str] = None):
@@ -138,6 +139,24 @@ class GLPublisherMCPServer:
                         type="text",
                         text=f"Error: {str(e)}"
                     )]
+
+            elif name == "find_impact_builders":
+                query = arguments.get("query")
+                results = find_impact_builders(query, self.gl_publisher_path)
+
+                if not results:
+                    return [types.TextContent(
+                        type="text",
+                        text="No Impact Builders found."
+                    )]
+
+                output = f"Found {len(results)} Impact Builder(s):\n\n"
+                for result in results:
+                    output += f"**{result['name']}**\n"
+                    output += f"- Accepts: `{result['accepted_type']}`\n"
+                    output += f"- File: `{result['file']}`\n\n"
+
+                return [types.TextContent(type="text", text=output)]
 
             return [types.TextContent(
                 type="text",
