@@ -1,0 +1,23 @@
+[project]
+name = "gl-publisher-mcp-server"
+version = "0.1.0"
+description = "MCP server for GL Publisher documentation and knowledge"
+requires-python = ">=3.9"
+dependencies = [
+    "mcp>=0.9.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+gl-publisher-mcp = "gl_publisher_mcp.server:main"
