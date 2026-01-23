@@ -5,6 +5,7 @@ import mcp.types as types
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from gl_publisher_mcp.tools.adr_search import search_adrs
+from gl_publisher_mcp.tools.file_reader import read_file, FileReadError
 
 class GLPublisherMCPServer:
     def __init__(self, gl_publisher_path: Optional[str] = None):
@@ -123,6 +124,20 @@ class GLPublisherMCPServer:
                     output += f"Path: `{result['path']}`\n\n"
 
                 return [types.TextContent(type="text", text=output)]
+
+            elif name == "read_file":
+                path = arguments.get("path")
+                try:
+                    content = read_file(path, self.gl_publisher_path)
+                    return [types.TextContent(
+                        type="text",
+                        text=f"# {path}\n\n```\n{content}\n```"
+                    )]
+                except FileReadError as e:
+                    return [types.TextContent(
+                        type="text",
+                        text=f"Error: {str(e)}"
+                    )]
 
             return [types.TextContent(
                 type="text",
