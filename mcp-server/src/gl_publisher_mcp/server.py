@@ -7,6 +7,7 @@ from mcp.server.stdio import stdio_server
 from gl_publisher_mcp.tools.adr_search import search_adrs
 from gl_publisher_mcp.tools.file_reader import read_file, FileReadError
 from gl_publisher_mcp.tools.impact_builder_finder import find_impact_builders
+from gl_publisher_mcp.tools.schema_info import get_schema_info
 
 class GLPublisherMCPServer:
     def __init__(self, gl_publisher_path: Optional[str] = None):
@@ -157,6 +158,11 @@ class GLPublisherMCPServer:
                     output += f"- File: `{result['file']}`\n\n"
 
                 return [types.TextContent(type="text", text=output)]
+
+            elif name == "get_schema_info":
+                table = arguments.get("table")
+                info = get_schema_info(table, self.gl_publisher_path)
+                return [types.TextContent(type="text", text=info)]
 
             return [types.TextContent(
                 type="text",
