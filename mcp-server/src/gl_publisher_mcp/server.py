@@ -106,6 +106,68 @@ class GLPublisherMCPServer:
         # Store handler for testing
         self._list_tools_handler = list_tools_handler
 
+        @self.server.list_resources()
+        async def list_resources_handler() -> list[types.Resource]:
+            """List available resources"""
+            return [
+                types.Resource(
+                    uri="adrs://list",
+                    name="Architecture Decision Records",
+                    description="List of all ADRs in the repository",
+                    mimeType="text/markdown"
+                ),
+                types.Resource(
+                    uri="docs://modules",
+                    name="Module Documentation",
+                    description="README files from each module",
+                    mimeType="text/markdown"
+                ),
+                types.Resource(
+                    uri="schema://reference",
+                    name="Schema Reference",
+                    description="Oracle GL schema reference documentation",
+                    mimeType="text/markdown"
+                ),
+            ]
+
+        # Store handler for testing
+        self._list_resources_handler = list_resources_handler
+
+        @self.server.read_resource()
+        async def read_resource_handler(uri: str) -> str:
+            """Read a specific resource"""
+            if uri == "adrs://list":
+                adr_dir = self.gl_publisher_path / "docs" / "adr"
+                if not adr_dir.exists():
+                    return "# Architecture Decision Records\n\nNo ADRs found."
+                output = "# Architecture Decision Records\n\n"
+                for adr_file in sorted(adr_dir.glob("*.md")):
+                    if adr_file.name != "README.md":
+                        output += f"- {adr_file.name}\n"
+                return output
+
+            elif uri == "docs://modules":
+                modules = ["api", "queue-processor", "audit-status-processor", "db"]
+                output = "# Module Documentation\n\n"
+                for module in modules:
+                    readme = self.gl_publisher_path / module / "README.md"
+                    if readme.exists():
+                        output += f"\n## {module}\n\n"
+                        output += readme.read_text()
+                        output += "\n---\n"
+                return output
+
+            elif uri == "schema://reference":
+                schema_file = self.gl_publisher_path / "docs" / "oracle-gl-schema-reference.md"
+                if schema_file.exists():
+                    return schema_file.read_text()
+                return "Schema reference not found."
+
+            return f"Unknown resource: {uri}"
+
+        # Store handler for testing
+        self._read_resource_handler = read_resource_handler
+
         @self.server.call_tool()
         async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
             """Handle tool calls"""
@@ -191,6 +253,10 @@ class GLPublisherMCPServer:
     async def list_tools(self):
         """Wrapper to expose tools for testing"""
         return await self._list_tools_handler()
+
+    async def list_resources(self):
+        """Wrapper to expose resources for testing"""
+        return await self._list_resources_handler()
 
 async def main():
     """Main entry point for MCP server"""
