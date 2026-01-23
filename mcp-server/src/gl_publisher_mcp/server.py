@@ -10,13 +10,15 @@ from gl_publisher_mcp.tools.impact_builder_finder import find_impact_builders
 from gl_publisher_mcp.tools.schema_info import get_schema_info
 from gl_publisher_mcp.tools.code_search import search_code
 
+
 class GLPublisherMCPServer:
     def __init__(self, gl_publisher_path: Optional[str] = None):
         self.name = "gl-publisher"
         self.gl_publisher_path = Path(
-            gl_publisher_path or os.environ.get(
+            gl_publisher_path
+            or os.environ.get(
                 "GL_PUBLISHER_PATH",
-                str(Path.home() / "IdeaProjects" / "oracle-gl-publisher")
+                str(Path.home() / "IdeaProjects" / "oracle-gl-publisher"),
             )
         )
         self.server = Server(self.name)
@@ -35,13 +37,10 @@ class GLPublisherMCPServer:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "Search query"
-                            }
+                            "query": {"type": "string", "description": "Search query"}
                         },
-                        "required": ["query"]
-                    }
+                        "required": ["query"],
+                    },
                 ),
                 types.Tool(
                     name="read_file",
@@ -51,11 +50,11 @@ class GLPublisherMCPServer:
                         "properties": {
                             "path": {
                                 "type": "string",
-                                "description": "Relative path from repo root"
+                                "description": "Relative path from repo root",
                             }
                         },
-                        "required": ["path"]
-                    }
+                        "required": ["path"],
+                    },
                 ),
                 types.Tool(
                     name="find_impact_builders",
@@ -65,10 +64,10 @@ class GLPublisherMCPServer:
                         "properties": {
                             "query": {
                                 "type": "string",
-                                "description": "Optional search term"
+                                "description": "Optional search term",
                             }
-                        }
-                    }
+                        },
+                    },
                 ),
                 types.Tool(
                     name="get_schema_info",
@@ -78,10 +77,10 @@ class GLPublisherMCPServer:
                         "properties": {
                             "table": {
                                 "type": "string",
-                                "description": "Table name (GL_INTERFACE, GL_JE_BATCHES, etc.)"
+                                "description": "Table name (GL_INTERFACE, GL_JE_BATCHES, etc.)",
                             }
-                        }
-                    }
+                        },
+                    },
                 ),
                 types.Tool(
                     name="search_code",
@@ -91,15 +90,15 @@ class GLPublisherMCPServer:
                         "properties": {
                             "pattern": {
                                 "type": "string",
-                                "description": "Search pattern or keyword"
+                                "description": "Search pattern or keyword",
                             },
                             "file_pattern": {
                                 "type": "string",
-                                "description": "Optional file pattern (e.g., '*.kt')"
-                            }
+                                "description": "Optional file pattern (e.g., '*.kt')",
+                            },
                         },
-                        "required": ["pattern"]
-                    }
+                        "required": ["pattern"],
+                    },
                 ),
             ]
 
@@ -114,19 +113,19 @@ class GLPublisherMCPServer:
                     uri="adrs://list",
                     name="Architecture Decision Records",
                     description="List of all ADRs in the repository",
-                    mimeType="text/markdown"
+                    mimeType="text/markdown",
                 ),
                 types.Resource(
                     uri="docs://modules",
                     name="Module Documentation",
                     description="README files from each module",
-                    mimeType="text/markdown"
+                    mimeType="text/markdown",
                 ),
                 types.Resource(
                     uri="schema://reference",
                     name="Schema Reference",
                     description="Oracle GL schema reference documentation",
-                    mimeType="text/markdown"
+                    mimeType="text/markdown",
                 ),
             ]
 
@@ -158,7 +157,9 @@ class GLPublisherMCPServer:
                 return output
 
             elif uri == "schema://reference":
-                schema_file = self.gl_publisher_path / "docs" / "oracle-gl-schema-reference.md"
+                schema_file = (
+                    self.gl_publisher_path / "docs" / "oracle-gl-schema-reference.md"
+                )
                 if schema_file.exists():
                     return schema_file.read_text()
                 return "Schema reference not found."
@@ -176,10 +177,11 @@ class GLPublisherMCPServer:
                 results = search_adrs(query, self.gl_publisher_path)
 
                 if not results:
-                    return [types.TextContent(
-                        type="text",
-                        text="No ADRs found matching your query."
-                    )]
+                    return [
+                        types.TextContent(
+                            type="text", text="No ADRs found matching your query."
+                        )
+                    ]
 
                 # Format results
                 output = f"Found {len(results)} ADR(s):\n\n"
@@ -194,25 +196,22 @@ class GLPublisherMCPServer:
                 path = arguments.get("path")
                 try:
                     content = read_file(path, self.gl_publisher_path)
-                    return [types.TextContent(
-                        type="text",
-                        text=f"# {path}\n\n```\n{content}\n```"
-                    )]
+                    return [
+                        types.TextContent(
+                            type="text", text=f"# {path}\n\n```\n{content}\n```"
+                        )
+                    ]
                 except FileReadError as e:
-                    return [types.TextContent(
-                        type="text",
-                        text=f"Error: {str(e)}"
-                    )]
+                    return [types.TextContent(type="text", text=f"Error: {str(e)}")]
 
             elif name == "find_impact_builders":
                 query = arguments.get("query")
                 results = find_impact_builders(query, self.gl_publisher_path)
 
                 if not results:
-                    return [types.TextContent(
-                        type="text",
-                        text="No Impact Builders found."
-                    )]
+                    return [
+                        types.TextContent(type="text", text="No Impact Builders found.")
+                    ]
 
                 output = f"Found {len(results)} Impact Builder(s):\n\n"
                 for result in results:
@@ -233,10 +232,11 @@ class GLPublisherMCPServer:
                 results = search_code(pattern, self.gl_publisher_path, file_pattern)
 
                 if not results:
-                    return [types.TextContent(
-                        type="text",
-                        text=f"No matches found for '{pattern}'."
-                    )]
+                    return [
+                        types.TextContent(
+                            type="text", text=f"No matches found for '{pattern}'."
+                        )
+                    ]
 
                 output = f"Found {len(results)} match(es) for '{pattern}':\n\n"
                 for result in results:
@@ -245,10 +245,7 @@ class GLPublisherMCPServer:
 
                 return [types.TextContent(type="text", text=output)]
 
-            return [types.TextContent(
-                type="text",
-                text=f"Unknown tool: {name}"
-            )]
+            return [types.TextContent(type="text", text=f"Unknown tool: {name}")]
 
     async def list_tools(self):
         """Wrapper to expose tools for testing"""
@@ -258,17 +255,18 @@ class GLPublisherMCPServer:
         """Wrapper to expose resources for testing"""
         return await self._list_resources_handler()
 
+
 async def main():
     """Main entry point for MCP server"""
     server = GLPublisherMCPServer()
 
     async with stdio_server() as (read_stream, write_stream):
         await server.server.run(
-            read_stream,
-            write_stream,
-            server.server.create_initialization_options()
+            read_stream, write_stream, server.server.create_initialization_options()
         )
+
 
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(main())

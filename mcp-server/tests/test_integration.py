@@ -3,6 +3,7 @@ import asyncio
 from pathlib import Path
 from gl_publisher_mcp.server import GLPublisherMCPServer
 
+
 @pytest.mark.asyncio
 async def test_full_workflow():
     """Test complete workflow of using MCP server"""
@@ -24,6 +25,7 @@ async def test_full_workflow():
 
     print("✅ All tools and resources available")
 
+
 @pytest.mark.asyncio
 async def test_search_real_adrs():
     """Test searching actual ADRs"""
@@ -33,6 +35,7 @@ async def test_search_real_adrs():
         pytest.skip("oracle-gl-publisher repo not found")
 
     from gl_publisher_mcp.tools.adr_search import search_adrs
+
     results = search_adrs("idempotency", gl_path)
 
     assert len(results) > 0

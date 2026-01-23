@@ -1,6 +1,7 @@
 import pytest
 from gl_publisher_mcp.server import GLPublisherMCPServer
 
+
 @pytest.mark.asyncio
 async def test_server_has_resources():
     """Test that server exposes resources"""
