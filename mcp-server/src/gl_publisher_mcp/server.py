@@ -8,6 +8,7 @@ from gl_publisher_mcp.tools.adr_search import search_adrs
 from gl_publisher_mcp.tools.file_reader import read_file, FileReadError
 from gl_publisher_mcp.tools.impact_builder_finder import find_impact_builders
 from gl_publisher_mcp.tools.schema_info import get_schema_info
+from gl_publisher_mcp.tools.code_search import search_code
 
 class GLPublisherMCPServer:
     def __init__(self, gl_publisher_path: Optional[str] = None):
@@ -163,6 +164,24 @@ class GLPublisherMCPServer:
                 table = arguments.get("table")
                 info = get_schema_info(table, self.gl_publisher_path)
                 return [types.TextContent(type="text", text=info)]
+
+            elif name == "search_code":
+                pattern = arguments.get("pattern")
+                file_pattern = arguments.get("file_pattern")
+                results = search_code(pattern, self.gl_publisher_path, file_pattern)
+
+                if not results:
+                    return [types.TextContent(
+                        type="text",
+                        text=f"No matches found for '{pattern}'."
+                    )]
+
+                output = f"Found {len(results)} match(es) for '{pattern}':\n\n"
+                for result in results:
+                    output += f"**{result['file']}:{result['line']}**\n"
+                    output += f"```\n{result['context']}\n```\n\n"
+
+                return [types.TextContent(type="text", text=output)]
 
             return [types.TextContent(
                 type="text",
