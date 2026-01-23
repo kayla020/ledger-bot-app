@@ -4,6 +4,7 @@ from typing import Optional
 import mcp.types as types
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
+from gl_publisher_mcp.tools.adr_search import search_adrs
 
 class GLPublisherMCPServer:
     def __init__(self, gl_publisher_path: Optional[str] = None):
@@ -100,6 +101,33 @@ class GLPublisherMCPServer:
 
         # Store handler for testing
         self._list_tools_handler = list_tools_handler
+
+        @self.server.call_tool()
+        async def call_tool(name: str, arguments: dict) -> list[types.TextContent]:
+            """Handle tool calls"""
+            if name == "search_adrs":
+                query = arguments.get("query")
+                results = search_adrs(query, self.gl_publisher_path)
+
+                if not results:
+                    return [types.TextContent(
+                        type="text",
+                        text="No ADRs found matching your query."
+                    )]
+
+                # Format results
+                output = f"Found {len(results)} ADR(s):\n\n"
+                for result in results:
+                    output += f"**{result['file']}**: {result['title']}\n"
+                    output += f"{result['excerpt']}\n"
+                    output += f"Path: `{result['path']}`\n\n"
+
+                return [types.TextContent(type="text", text=output)]
+
+            return [types.TextContent(
+                type="text",
+                text=f"Unknown tool: {name}"
+            )]
 
     async def list_tools(self):
         """Wrapper to expose tools for testing"""
