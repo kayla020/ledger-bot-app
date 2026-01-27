@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ledger-bot
+  namespace: bor-write  # Update to your namespace
+  labels:
+    app: ledger-bot
+    team: bor-write
+spec:
+  replicas: 1  # Socket Mode = single instance
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: ledger-bot
+  template:
+    metadata:
+      labels:
+        app: ledger-bot
+        team: bor-write
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: ledger-bot
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: ledger-bot
+        image: <REGISTRY>/ledger-bot:latest  # Update with your registry
+        imagePullPolicy: Always
+        ports:
+        - name: health
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: SLACK_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: ledger-bot-secrets
+              key: slack-bot-token
+        - name: SLACK_APP_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: ledger-bot-secrets
+              key: slack-app-token
+        - name: LITELLM_DEVELOPER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ledger-bot-secrets
+              key: litellm-developer-key
+        - name: HEALTH_PORT
+          value: "8080"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: health
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: health
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false  # Set to true if possible
+          capabilities:
+            drop:
+            - ALL
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ledger-bot
+  namespace: bor-write
+  labels:
+    app: ledger-bot
