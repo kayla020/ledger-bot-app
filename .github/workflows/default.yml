@@ -72,3 +72,11 @@ jobs:
           dockerfile_path: ./Dockerfile
           image_name: ledger-bot
           aws_region: ca-central-1
+
+  deploy:
+    name: Deploy
+    if: github.ref_name == 'main' || github.ref_name == 'master'
+    needs: package
+    uses: wealthsimple/github-workflows/.github/workflows/deploy.yml@v1
+    with:
+      deploy_kubernetes: true
