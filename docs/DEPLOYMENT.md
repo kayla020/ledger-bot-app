@@ -22,7 +22,10 @@ Replace placeholder secrets with actual values:
 ```bash
 cd ~/IdeaProjects/eks-app-workloads/workloads/ledger-bot
 sops secrets.staging.yaml
-# Replace PLACEHOLDER values with actual tokens
+# Replace these PLACEHOLDER values:
+# - SLACK_BOT_TOKEN: Get from Slack App settings
+# - SLACK_APP_TOKEN: Get from Slack App settings (Socket Mode token)
+# - LITELLM_DEVELOPER_KEY: Get from internal LiteLLM admin
 ```
 
 ### 2. Submit PR to eks-app-workloads
@@ -43,6 +46,9 @@ Once PR is approved and merged, ArgoCD will automatically deploy to staging.
 ### 4. Verify Deployment
 
 ```bash
+# Verify you're connected to the correct cluster
+kubectl config current-context
+
 # Check pod status
 kubectl get pods -n ledger-bot -l app=ledger-bot
 
@@ -50,9 +56,18 @@ kubectl get pods -n ledger-bot -l app=ledger-bot
 kubectl logs -n ledger-bot -l app=ledger-bot --tail=50
 
 # Check health endpoints
-kubectl port-forward -n ledger-bot svc/ledger-bot 8080:8080
+kubectl port-forward -n ledger-bot svc/ledger-bot 8080:8080 &
+
+# Test liveness probe
 curl http://localhost:8080/health
+# Expected: {"status":"healthy"}
+
+# Test readiness probe
 curl http://localhost:8080/ready
+# Expected: {"ready":true,"slack_connected":true}
+
+# Stop port-forward
+kill %1
 ```
 
 ### 5. Test in Slack
