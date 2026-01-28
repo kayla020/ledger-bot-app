@@ -72,32 +72,29 @@ python app.py
 
 ## Production Deployment
 
-### Prerequisites
-- Kubernetes cluster access
-- Docker registry access
-- Secret management (Kubernetes Secrets or Vault)
+### Automated Deployment (After Initial Setup)
 
-### Deploy to Kubernetes
+Merging to `main` branch automatically:
+1. Runs tests via GitHub Actions
+2. Builds and pushes Docker image to AWS ECR
+3. Updates `eks-app-workloads` repository with new image tag
+4. ArgoCD deploys to staging EKS cluster
 
-```bash
-# 1. Build and push Docker image
-docker build -t <registry>/ledger-bot:latest .
-docker push <registry>/ledger-bot:latest
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment guide.
 
-# 2. Create secrets
-kubectl create secret generic ledger-bot-secrets \
-  --from-literal=slack-bot-token=xoxb-... \
-  --from-literal=slack-app-token=xapp-... \
-  --from-literal=litellm-developer-key=sk-... \
-  -n bor-write
+### Initial Setup
 
-# 3. Deploy
-kubectl apply -f k8s/
+First-time deployment requires:
+1. Adding workload configuration to `eks-app-workloads` repository
+2. Encrypting secrets with SOPS
+3. Submitting PR to `eks-app-workloads`
 
-# 4. Verify deployment
-kubectl get pods -n bor-write -l app=ledger-bot
-kubectl logs -n bor-write -l app=ledger-bot --tail=50
-```
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for step-by-step instructions.
+
+### Deployment Status
+
+- **Staging:** Automated via ArgoCD
+- **Production:** Not yet configured (Phase 2)
 
 ### Health Checks
 
