@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional
 import re
 
+
 def get_schema_info(table: Optional[str], gl_publisher_path: Path) -> str:
     """
     Get Oracle GL schema information for a specific table.
@@ -22,7 +23,7 @@ def get_schema_info(table: Optional[str], gl_publisher_path: Path) -> str:
 
     if not table:
         # Return overview with all table names
-        table_matches = re.findall(r'^## (GL_\w+)', content, re.MULTILINE)
+        table_matches = re.findall(r"^## (GL_\w+)", content, re.MULTILINE)
         overview = "# Oracle GL Schema Tables\n\n"
         overview += "Available tables:\n"
         for table_name in table_matches:
@@ -32,7 +33,7 @@ def get_schema_info(table: Optional[str], gl_publisher_path: Path) -> str:
 
     # Find specific table section
     table_upper = table.upper()
-    pattern = rf'^## {re.escape(table_upper)}.*?(?=^## |\Z)'
+    pattern = rf"^## {re.escape(table_upper)}.*?(?=^## |\Z)"
     match = re.search(pattern, content, re.MULTILINE | re.DOTALL)
 
     if not match:

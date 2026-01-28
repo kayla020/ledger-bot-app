@@ -1,10 +1,12 @@
 import pytest
 from gl_publisher_mcp.server import GLPublisherMCPServer
 
+
 def test_server_initialization():
     """Test that server initializes with correct name"""
     server = GLPublisherMCPServer()
     assert server.name == "gl-publisher"
+
 
 @pytest.mark.asyncio
 async def test_server_has_tools():

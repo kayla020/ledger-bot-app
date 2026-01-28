@@ -1,56 +1,235 @@
-# Getting Started ⚡️ Bolt for Python
+# Ledger Bot 🤖
 
-> Slack app example from 📚 [Getting started with Bolt for Python](https://docs.slack.dev/tools/bolt-python/getting-started)
+An AI-powered Slack bot that helps teams understand and integrate with the GL Publisher and ledger system.
 
 ## Overview
 
-This is a Slack app built with the [Bolt for Python framework](https://docs.slack.dev/tools/bolt-python/) that showcases responding to events and interactive buttons.
+Ledger Bot is a comprehensive knowledge assistant built with Claude Sonnet 4.5 that provides:
+- **Team onboarding** - Help new engineers understand GL Publisher
+- **Troubleshooting** - Debug activity issues, schema problems, etc.
+- **Documentation** - On-demand access to ADRs, schemas, and patterns
+- **Best practices** - Guide teams on proper integration patterns
 
-## Running locally
+Built during an exploration day, this project demonstrates rapid prototyping with Claude Code and production-ready deployment practices.
 
-### 1. Setup environment variables
+## Architecture
 
-```zsh
-# Replace with your tokens
-export SLACK_BOT_TOKEN=<your-bot-token>
-export SLACK_APP_TOKEN=<your-app-level-token>
+```
+┌─────────────────┐
+│  Slack Bot      │
+│  (Socket Mode)  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  LiteLLM        │
+│  Gateway        │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  Claude         │
+│  Sonnet 4.5     │
+└─────────────────┘
 ```
 
-### 2. Setup your local project
+**Key Features:**
+- Socket Mode (no webhooks, no ngrok)
+- Company LiteLLM infrastructure
+- Health check endpoints for Kubernetes
+- Comprehensive knowledge base (6.5KB)
+- Fast response times with "Thinking..." indicator
 
-```zsh
-# Clone this project onto your machine
-git clone https://github.com/slack-samples/bolt-python-getting-started-app.git
+## Quick Start
 
-# Change into this project
-cd bolt-python-getting-started-app/
+### Local Development
 
-# Setup virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
+```bash
+# 1. Clone repository
+git clone <repo-url>
+cd ledger-bot-app
 
-# Install the dependencies
+# 2. Install dependencies
 pip install -r requirements.txt
+
+# 3. Configure environment
+cp .env.example .env
+# Edit .env with your tokens:
+# - SLACK_BOT_TOKEN
+# - SLACK_APP_TOKEN
+# - LITELLM_DEVELOPER_KEY
+
+# 4. Run locally
+python app.py
 ```
 
-### 3. Start servers
+### Usage
 
-```zsh
-python3 app.py
+**In Slack:**
+- Direct message: `What is GL Publisher?`
+- Mention in channel: `@ledgerbot How do I create ledger lines?`
+- Get help: `@ledgerbot What's an Impact Builder?`
+
+## Production Deployment
+
+### Automated Deployment (After Initial Setup)
+
+Merging to `main` branch automatically:
+1. Runs tests via GitHub Actions
+2. Builds and pushes Docker image to AWS ECR
+3. Updates `eks-app-workloads` repository with new image tag
+4. ArgoCD deploys to staging EKS cluster
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment guide.
+
+### Initial Setup
+
+First-time deployment requires:
+1. Adding workload configuration to `eks-app-workloads` repository
+2. Encrypting secrets with SOPS
+3. Submitting PR to `eks-app-workloads`
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for step-by-step instructions.
+
+### Deployment Status
+
+- **Staging:** Automated via ArgoCD
+- **Production:** Not yet configured (Phase 2)
+
+### Health Checks
+
+- **Liveness**: `GET /health` - Returns 200 if app is alive
+- **Readiness**: `GET /ready` - Returns 200 if ready to serve, 503 if not
+
+## Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=app --cov-report=html
+
+# Run specific test
+pytest tests/test_app.py::TestHealthEndpoints::test_health_endpoint
 ```
 
-## More examples
+## CI/CD
 
-Looking for more examples of Bolt for Python? Browse to [bolt-python/examples/](https://github.com/slackapi/bolt-python/tree/main/examples) for a long list of usage, server, and deployment code samples!
+GitHub Actions workflow automatically:
+- Runs tests on all PRs
+- Builds Docker images on main branch merges
+- Deploys to staging EKS cluster via ArgoCD
 
-## Contributing
+See `.github/workflows/default.yml` for details.
 
-### Issues and questions
+## Project Structure
 
-Found a bug or have a question about this project? We'd love to hear from you!
+```
+ledger-bot-app/
+├── app.py                  # Main Slack bot application
+├── knowledge_base.txt      # Curated GL Publisher knowledge
+├── requirements.txt        # Python dependencies
+├── Dockerfile              # Container image definition
+├── pytest.ini              # Test configuration
+├── run_tests.sh           # Test runner script
+├── .github/
+│   └── workflows/
+│       └── default.yml     # CI/CD pipeline
+├── k8s/                    # Kubernetes manifests
+│   ├── deployment.yaml     # Bot deployment
+│   ├── service.yaml        # Service definition
+│   └── secret.yaml.template # Secret template
+├── tests/                  # Unit tests
+│   ├── test_app.py
+│   └── README.md
+├── docs/                   # Documentation
+│   ├── EXPLORATION_DAY_SUMMARY.md
+│   ├── DEMO_SCRIPT.md
+│   ├── LESSONS_LEARNED.md
+│   ├── PRODUCTION_DEPLOYMENT.md
+│   └── plans/
+└── mcp-server/            # MCP server (separate interface)
+```
 
-1. Browse to [slackapi/bolt-python/issues](https://github.com/slackapi/bolt-python/issues/new/choose)
-1. Create a new issue
-1. Mention that you're using this example app
+## Documentation
 
-See you there and thanks for helping to improve Bolt for everyone!
+- **[Exploration Day Summary](docs/EXPLORATION_DAY_SUMMARY.md)** - What was built and why
+- **[Demo Script](docs/DEMO_SCRIPT.md)** - 15-minute presentation guide
+- **[Lessons Learned](docs/LESSONS_LEARNED.md)** - Insights and retrospective
+- **[Production Deployment](docs/PRODUCTION_DEPLOYMENT.md)** - Comprehensive deployment guide
+- **[MCP Server Guide](mcp-server/TEAM_INSTALL_GUIDE.md)** - Personal Claude Desktop integration
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `SLACK_BOT_TOKEN` | Bot user OAuth token (xoxb-...) | Yes |
+| `SLACK_APP_TOKEN` | App-level token (xapp-...) | Yes |
+| `LITELLM_DEVELOPER_KEY` | LiteLLM API key | Yes |
+| `HEALTH_PORT` | Health check server port | No (default: 8080) |
+
+### Kubernetes Resources
+
+- **CPU**: 250m request, 500m limit
+- **Memory**: 256Mi request, 512Mi limit
+- **Replicas**: 1 (Socket Mode = single instance)
+
+## Cost Estimation
+
+- **Infrastructure**: ~$20-30/month (Kubernetes resources)
+- **API calls**: ~$0.01-0.05 per question
+- **Estimated total**: $100-150/month for moderate usage
+
+## Monitoring
+
+The bot exposes metrics for:
+- Question count
+- Response latency
+- Error rates
+- LLM token usage
+
+Configure Prometheus scraping on port 8080, path `/metrics`.
+
+## Support
+
+- **Questions**: Ask in #bor-write-eng
+- **Issues**: Create GitHub issue
+- **Maintainer**: Kayla (@kayla.lu)
+
+## Roadmap
+
+### Phase 1 (Current)
+- ✅ Slack bot with static knowledge
+- ✅ Health checks and monitoring
+- ✅ Production deployment manifests
+- ✅ Basic test coverage
+- 🏗️ MCP server implementation
+
+### Phase 2 (Next Sprint)
+- GraphQL API integration (live activity status)
+- Database access (ledger state queries)
+- Kafka monitoring (topic inspection)
+- Enhanced testing (integration, load tests)
+
+### Phase 3 (Future)
+- Tool calling for dynamic knowledge retrieval
+- RAG system for full repository search
+- Multi-team customization
+- Analytics dashboard
+
+## License
+
+Internal Wealthsimple project - not for external distribution.
+
+## Acknowledgments
+
+Built with:
+- [Slack Bolt for Python](https://slack.dev/bolt-python/)
+- [Claude Sonnet 4.5](https://www.anthropic.com/claude)
+- [LiteLLM](https://docs.litellm.ai/)
+- [Claude Code](https://claude.ai/claude-code)
+
+Special thanks to the BOR Write team for domain expertise and the Platform team for LiteLLM infrastructure.

@@ -1,9 +1,12 @@
 from pathlib import Path
 from typing import Union
 
+
 class FileReadError(Exception):
     """Error reading file"""
+
     pass
+
 
 def read_file(relative_path: str, gl_publisher_path: Path) -> str:
     """

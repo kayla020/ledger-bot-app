@@ -1,0 +1,82 @@
+name: Default
+
+on:
+  push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest tests/test_app.py -v
+
+  package:
+    name: Package
+    runs-on: x64-4-core
+    needs: test
+    if: github.ref_name == 'main' || github.ref_name == 'master'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_WSMAIN_GITHUB_ACTIONS_ROLE }}
+          aws-region: us-east-1
+
+      - name: Login to ECR (us-east-1)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.AWS_ECR_URL_IAD }}
+
+      - name: Login to ECR (ca-central-1)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.AWS_ECR_URL_YUL }}
+
+      - name: Configure AWS Credentials for Deployment
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_INTERNAL_GITHUB_DEPLOYMENT_ARTIFACTS_ROLE }}
+          aws-region: us-east-1
+
+      - name: Build and Ship Docker Image
+        uses: wealthsimple/github-workflows@v1
+        with:
+          script: await toolbox.docker.run();
+          docker_build_path: .
+          dockerfile_path: ./Dockerfile
+          image_name: ledger-bot
+          aws_region: ca-central-1
+
+  deploy:
+    name: Deploy
+    if: github.ref_name == 'main' || github.ref_name == 'master'
+    needs: package
+    uses: wealthsimple/github-workflows/.github/workflows/deploy.yml@v1
+    with:
+      deploy_kubernetes: true

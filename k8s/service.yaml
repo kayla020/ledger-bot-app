@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ledger-bot
+  namespace: bor-write
+  labels:
+    app: ledger-bot
+    team: bor-write
+spec:
+  type: ClusterIP  # Internal only - Socket Mode doesn't need external traffic
+  selector:
+    app: ledger-bot
+  ports:
+  - name: health
+    protocol: TCP
+    port: 8080
+    targetPort: health
