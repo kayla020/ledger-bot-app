@@ -80,7 +80,7 @@ Merging to `main` branch automatically:
 3. Updates `eks-app-workloads` repository with new image tag
 4. ArgoCD deploys to staging EKS cluster
 
-See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment guide.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment guide.
 
 ### Initial Setup
 
@@ -118,11 +118,10 @@ pytest tests/test_app.py::TestHealthEndpoints::test_health_endpoint
 
 GitHub Actions workflow automatically:
 - Runs tests on all PRs
-- Performs security scanning
-- Builds Docker images on main branch
-- (TODO) Deploys to Kubernetes
+- Builds Docker images on main branch merges
+- Deploys to staging EKS cluster via ArgoCD
 
-See `.github/workflows/ci.yaml` for details.
+See `.github/workflows/default.yml` for details.
 
 ## Project Structure
 
@@ -136,7 +135,7 @@ ledger-bot-app/
 ├── run_tests.sh           # Test runner script
 ├── .github/
 │   └── workflows/
-│       └── ci.yaml         # CI/CD pipeline
+│       └── default.yml     # CI/CD pipeline
 ├── k8s/                    # Kubernetes manifests
 │   ├── deployment.yaml     # Bot deployment
 │   ├── service.yaml        # Service definition
