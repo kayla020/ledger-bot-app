@@ -67,12 +67,17 @@ def handle_mention(event, say, client):
     channel = event["channel"]
     ts = event["ts"]
 
-    # Send immediate acknowledgment
-    thinking_msg = client.chat_postMessage(
-        channel=channel,
-        thread_ts=ts,
-        text=":hourglass_flowing_sand: Thinking..."
-    )
+    try:
+        # Send immediate acknowledgment
+        thinking_msg = client.chat_postMessage(
+            channel=channel,
+            thread_ts=ts,
+            text=":hourglass_flowing_sand: Thinking..."
+        )
+    except Exception as e:
+        print(f"Error posting thinking message (mention): {e}")
+        # Can't post to channel, silently fail
+        return
 
     try:
         # Call LiteLLM
@@ -85,22 +90,36 @@ def handle_mention(event, say, client):
             ]
         )
 
+        # Get response content and truncate if too long
+        response_text = response.choices[0].message.content
+
+        # Slack limit is 40,000 chars, but be conservative
+        # With max_tokens=2000, response should be ~8000 chars max
+        # Use 10,000 to be extra safe
+        MAX_MESSAGE_LENGTH = 10000
+        if len(response_text) > MAX_MESSAGE_LENGTH:
+            response_text = response_text[:MAX_MESSAGE_LENGTH] + "\n\n...\n\n_(Response truncated due to length. Please ask a more specific question.)_"
+
         # Update with actual response
         client.chat_update(
             channel=channel,
             ts=thinking_msg["ts"],
-            text=response.choices[0].message.content
+            text=response_text
         )
     except Exception as e:
         # Handle errors gracefully
-        error_message = f"❌ Sorry, I encountered an error: `{str(e)}`\n\n"
+        error_message = f"❌ Sorry, I encountered an error: `{str(e)[:500]}`\n\n"
         error_message += "This is usually temporary. Please try again in a moment, or reach out to #bor-write-eng if the issue persists."
 
-        client.chat_update(
-            channel=channel,
-            ts=thinking_msg["ts"],
-            text=error_message
-        )
+        try:
+            client.chat_update(
+                channel=channel,
+                ts=thinking_msg["ts"],
+                text=error_message
+            )
+        except Exception as update_error:
+            print(f"Error updating error message: {update_error}")
+
         print(f"Error handling mention: {e}")
 
 # Handle direct messages
@@ -113,11 +132,16 @@ def handle_message(event, say, client):
     user_question = event["text"]
     channel = event["channel"]
 
-    # Send immediate acknowledgment
-    thinking_msg = client.chat_postMessage(
-        channel=channel,
-        text=":hourglass_flowing_sand: Thinking..."
-    )
+    try:
+        # Send immediate acknowledgment
+        thinking_msg = client.chat_postMessage(
+            channel=channel,
+            text=":hourglass_flowing_sand: Thinking..."
+        )
+    except Exception as e:
+        print(f"Error posting thinking message (DM): {e}")
+        # Can't post to channel, silently fail
+        return
 
     try:
         # Call LiteLLM
@@ -130,22 +154,36 @@ def handle_message(event, say, client):
             ]
         )
 
+        # Get response content and truncate if too long
+        response_text = response.choices[0].message.content
+
+        # Slack limit is 40,000 chars, but be conservative
+        # With max_tokens=2000, response should be ~8000 chars max
+        # Use 10,000 to be extra safe
+        MAX_MESSAGE_LENGTH = 10000
+        if len(response_text) > MAX_MESSAGE_LENGTH:
+            response_text = response_text[:MAX_MESSAGE_LENGTH] + "\n\n...\n\n_(Response truncated due to length. Please ask a more specific question.)_"
+
         # Update with actual response
         client.chat_update(
             channel=channel,
             ts=thinking_msg["ts"],
-            text=response.choices[0].message.content
+            text=response_text
         )
     except Exception as e:
         # Handle errors gracefully
-        error_message = f"❌ Sorry, I encountered an error: `{str(e)}`\n\n"
+        error_message = f"❌ Sorry, I encountered an error: `{str(e)[:500]}`\n\n"
         error_message += "This is usually temporary. Please try again in a moment, or reach out to #bor-write-eng if the issue persists."
 
-        client.chat_update(
-            channel=channel,
-            ts=thinking_msg["ts"],
-            text=error_message
-        )
+        try:
+            client.chat_update(
+                channel=channel,
+                ts=thinking_msg["ts"],
+                text=error_message
+            )
+        except Exception as update_error:
+            print(f"Error updating error message: {update_error}")
+
         print(f"Error handling message: {e}")
 
 if __name__ == "__main__":
@@ -158,6 +196,11 @@ if __name__ == "__main__":
     # This allows bot to start even if model name needs adjustment
     print(f"📋 Using model: {MODEL_NAME}")
     print("⏭️  Skipping startup LLM test - will verify on first message")
+
+    # Print environment variables for debugging
+    print(f"SLACK_APP_TOKEN: {os.environ.get('SLACK_APP_TOKEN', 'NOT SET')}")
+    print(f"SLACK_BOT_TOKEN: {os.environ.get('SLACK_BOT_TOKEN', 'NOT SET')}")
+    print(f"LITELLM_DEVELOPER_KEY: {os.environ.get('LITELLM_DEVELOPER_KEY', 'NOT SET')}")
 
     # Start Socket Mode
     handler = SocketModeHandler(slack_app, os.environ["SLACK_APP_TOKEN"])
